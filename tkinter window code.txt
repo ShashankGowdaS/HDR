@@ -1,0 +1,100 @@
+import tkinter as tk
+from PIL import ImageTk,Image,ImageDraw
+import cv2
+import numpy as np
+import tensorflow as tf
+
+
+model=tf.keras.models.Sequential()
+model.add(tf.keras.layers.Flatten(input_shape=(28,28)))
+model.add(tf.keras.layers.Dense(units=128,activation=tf.nn.relu))
+model.add(tf.keras.layers.Dense(units=128,activation=tf.nn.relu))
+model.add(tf.keras.layers.Dense(units=10,activation=tf.nn.softmax))
+
+model.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+
+
+model.load_weights('handtf')
+
+
+
+
+
+
+
+
+win=tk.Tk()
+
+def event_function(event):
+    #print("Ram")
+    x=event.x
+    y=event.y
+    
+    x1=x-20
+    y1=y-20
+    
+    x2=x+20
+    y2=y+20
+
+    canvas.create_oval((x1,y1,x2,y2),fill='black')
+    img_draw.ellipse((x1,y1,x2,y2),fill='white')
+
+def save():
+    global count
+    img_ary=np.array(img)
+    img_ary=cv2.resize(img_ary,(28,28))
+    
+    cv2.imwrite(str(count)+'.jpg')
+    count +=1
+    
+def clear():
+    global img,img_draw
+    
+    canvas.delete('all')
+    img=Image.new('RGB',(500,500),(0,0,0))
+    img_draw=ImageDraw.Draw(img)
+    
+    
+def predict():
+    
+    img_ary=np.array(img)
+    img_ary=cv2.CvtColor(img_ary,cv2.COLOR_BGR2GRAY)
+    img_ary=cv2.resize(img_ary,(28,28))
+    
+    img_ary=img_ary/255.0
+    img_ary=img_ary.reshape(1,28,28)
+    result=model.predict(img_ary)
+    
+    label=np.argmax(result,axis=1)
+    label_status.config(text='Predicted digit:'+str(label))
+    
+#canvas
+canvas=tk.Canvas(win,width=500,height=500,bg='white')
+canvas.grid(row=0,column=0,columnspan=4)  #display
+
+
+#buttons
+button_save=tk.Button(win,text='Save',bg='green',fg='white',command=save)
+button_save.grid(row=1,column=0)
+
+button_predict=tk.Button(win,text='Predict',bg='blue',fg='white',command=predict)
+button_predict.grid(row=1,column=1)
+
+button_clear=tk.Button(win,text='Clear',bg='yellow',fg='white',command=clear)
+button_clear.grid(row=1,column=2)
+
+button_exit=tk.Button(win,text='Exit',bg='red',fg='white',command=win.destroy)
+button_exit.grid(row=1,column=3)
+
+#labels
+label_status=tk.Label(win,text='Predicted digit: None',bg='white')
+label_status.grid(row=2,column=0,columnspan=4)
+
+#events
+canvas.bind('<B1-Motion>',event_function)
+#canvas.bind('<Double-Button-1>',event_function)
+img=Image.new('RGB',(500,500),(0,0,0))
+img_draw=ImageDraw.Draw(img)
+
+#tkinter window
+win.mainloop()
